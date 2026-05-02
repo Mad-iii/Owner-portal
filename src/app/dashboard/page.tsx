@@ -68,14 +68,14 @@ export default async function DashboardPage() {
                         </tr>
                     </thead>
                     <tbody>
-                        {recentOrders.map((order) => (
+                        {recentOrders.map((order: any) => (
                             <tr key={order.id} className="border-b last:border-0">
                                 <td className="py-3">{order.orderNumber}</td>
                                 <td className="py-3">{order.customerName ?? "Guest"}</td>
                                 <td className="py-3">
                                     <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${order.status === "DELIVERED" ? "bg-green-100 text-green-700" :
-                                            order.status === "CANCELLED" ? "bg-red-100 text-red-700" :
-                                                "bg-yellow-100 text-yellow-700"
+                                        order.status === "CANCELLED" ? "bg-red-100 text-red-700" :
+                                            "bg-yellow-100 text-yellow-700"
                                         }`}>
                                         {order.status}
                                     </span>
