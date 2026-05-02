@@ -1,0 +1,88 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Store {
+  id        String      @id @default(cuid())
+  name      String
+  slug      String      @unique
+  email     String      @unique
+  password  String
+  createdAt DateTime    @default(now())
+  orders    Order[]
+  products  Product[]
+  customers Customer[]
+  visits    PageVisit[]
+}
+
+model Order {
+  id            String      @id @default(cuid())
+  storeId       String
+  store         Store       @relation(fields: [storeId], references: [id])
+  orderNumber   String
+  status        OrderStatus @default(PENDING)
+  total         Float
+  currency      String      @default("PKR")
+  customerName  String?
+  customerEmail String?
+  items         OrderItem[]
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model OrderItem {
+  id       String @id @default(cuid())
+  orderId  String
+  order    Order  @relation(fields: [orderId], references: [id])
+  name     String
+  quantity Int
+  price    Float
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model Product {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  name      String
+  sku       String?
+  price     Float
+  stock     Int      @default(0)
+  category  String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  email     String
+  name      String?
+  createdAt DateTime @default(now())
+
+  @@unique([storeId, email])
+}
+
+model PageVisit {
+  id        String   @id @default(cuid())
+  storeId   String
+  store     Store    @relation(fields: [storeId], references: [id])
+  page      String
+  sessionId String?
+  country   String?
+  createdAt DateTime @default(now())
+}
