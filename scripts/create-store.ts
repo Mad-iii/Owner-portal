@@ -32,4 +32,7 @@ async function main() {
 
 main()
     .catch(console.error)
-    .finally(() => prisma.$disconnect());
+    .finally(async () => {
+        const { prisma } = await import("../src/lib/prisma");
+        await prisma.$disconnect();
+    });
