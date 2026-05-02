@@ -1,10 +1,12 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import SalesChart from "@/components/SalesChart";
+import { redirect } from "next/navigation";
 
 export default async function DashboardPage() {
     const session = await auth();
-    const storeId = session!.user.storeId;
+    if (!session?.user?.storeId) redirect("/login");
+    const storeId = session.user.storeId;
 
     // All queries filtered by storeId — tenant isolation
     const [totalOrders, totalRevenue, totalProducts, totalCustomers, recentOrders] =
