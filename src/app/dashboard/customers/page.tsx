@@ -2,6 +2,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 
+const avatarColors = ["#2563eb", "#7c3aed", "#0891b2", "#059669", "#dc2626", "#d97706"];
+
 export default async function CustomersPage() {
     const session = await auth();
     if (!session?.user?.storeId) redirect("/login");
@@ -13,38 +15,66 @@ export default async function CustomersPage() {
     });
 
     return (
-        <div>
-            <h1 className="text-2xl font-semibold text-gray-900 mb-6">Customers</h1>
-            <div className="bg-white rounded-xl border border-gray-200">
-                <table className="w-full text-sm">
+        <div style={{ padding: "32px" }}>
+            <div style={{ marginBottom: "24px" }}>
+                <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>Customers</h1>
+                <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>{customers.length} registered customers</p>
+            </div>
+
+            <div style={{
+                background: "var(--bg-card)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                overflow: "hidden",
+            }}>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
-                        <tr className="border-b border-gray-100">
-                            <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Name</th>
-                            <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Email</th>
-                            <th className="text-left px-6 py-4 text-xs font-medium text-gray-400 uppercase tracking-wider">Joined</th>
+                        <tr style={{ borderBottom: "1px solid var(--border)", background: "var(--bg-subtle)" }}>
+                            {["Customer", "Email", "Joined"].map((h) => (
+                                <th key={h} style={{
+                                    padding: "12px 20px",
+                                    fontSize: "11px", fontWeight: 600,
+                                    color: "var(--text-muted)",
+                                    textTransform: "uppercase", letterSpacing: "0.06em",
+                                    textAlign: "left",
+                                }}>{h}</th>
+                            ))}
                         </tr>
                     </thead>
                     <tbody>
-                        {customers.map((customer: any) => (
-                            <tr key={customer.id} className="border-b border-gray-50 hover:bg-blue-50 transition-colors">
-                                <td className="px-6 py-4 font-medium text-gray-900">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-semibold">
-                                            {(customer.name ?? customer.email)[0].toUpperCase()}
+                        {customers.map((customer: any, i: number) => {
+                            const initial = (customer.name ?? customer.email)[0].toUpperCase();
+                            const color = avatarColors[i % avatarColors.length];
+                            return (
+                                <tr key={customer.id} style={{ borderBottom: "1px solid var(--border)" }}>
+                                    <td style={{ padding: "14px 20px" }}>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                                            <div style={{
+                                                width: "34px", height: "34px", borderRadius: "50%",
+                                                background: color + "18", color,
+                                                display: "flex", alignItems: "center", justifyContent: "center",
+                                                fontSize: "13px", fontWeight: 700, flexShrink: 0,
+                                            }}>
+                                                {initial}
+                                            </div>
+                                            <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>
+                                                {customer.name ?? "—"}
+                                            </span>
                                         </div>
-                                        {customer.name ?? "—"}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-gray-500">{customer.email}</td>
-                                <td className="px-6 py-4 text-gray-400">
-                                    {new Date(customer.createdAt).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                    <td style={{ padding: "14px 20px", fontSize: "13px", color: "var(--text-secondary)" }}>
+                                        {customer.email}
+                                    </td>
+                                    <td style={{ padding: "14px 20px", fontSize: "12px", color: "var(--text-muted)" }}>
+                                        {new Date(customer.createdAt).toLocaleDateString("en-PK", { day: "numeric", month: "short", year: "numeric" })}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
                 {customers.length === 0 && (
-                    <div className="text-center py-12 text-gray-400">No customers yet.</div>
+                    <div style={{ textAlign: "center", padding: "64px", color: "var(--text-muted)", fontSize: "14px" }}>No customers yet.</div>
                 )}
             </div>
         </div>

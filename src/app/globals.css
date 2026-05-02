@@ -1,30 +1,70 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 @import "tailwindcss";
 
-body {
-  font-family: Arial, Helvetica, sans-serif;
-}
-
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f8faff;
+  --bg-card: #ffffff;
+  --bg-subtle: #f0f4ff;
+  --border: #e2e8f8;
+  --border-strong: #c7d4f0;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --blue: #2563eb;
+  --blue-light: #eff6ff;
+  --blue-mid: #dbeafe;
+  --blue-dark: #1d4ed8;
+  --accent: #3b82f6;
+  --sidebar-bg: #ffffff;
+  --sidebar-border: #e2e8f8;
+  --sidebar-active-bg: #eff6ff;
+  --sidebar-active-text: #2563eb;
+  --sidebar-text: #64748b;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+[data-theme="dark"] {
+  --bg: #0d1117;
+  --bg-card: #161b27;
+  --bg-subtle: #1e2740;
+  --border: #1e2d4a;
+  --border-strong: #2a3f66;
+  --text-primary: #f0f6ff;
+  --text-secondary: #94a3b8;
+  --text-muted: #475569;
+  --blue: #3b82f6;
+  --blue-light: #1e2d4a;
+  --blue-mid: #1e3a5f;
+  --blue-dark: #60a5fa;
+  --accent: #60a5fa;
+  --sidebar-bg: #111827;
+  --sidebar-border: #1e2d4a;
+  --sidebar-active-bg: #1e2d4a;
+  --sidebar-active-text: #60a5fa;
+  --sidebar-text: #64748b;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: 'DM Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
 }
