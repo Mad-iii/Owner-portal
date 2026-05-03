@@ -1,23 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-// Shared secret — your existing Express servers must send this header
 const INGEST_SECRET = process.env.INGEST_SECRET!;
 
+function corsHeaders() {
+    return {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, x-ingest-secret",
+    };
+}
+
+export async function OPTIONS() {
+    return NextResponse.json({}, { headers: corsHeaders() });
+}
+
 export async function POST(req: NextRequest) {
-    // Verify the request is from your own servers
     const secret = req.headers.get("x-ingest-secret");
     if (secret !== INGEST_SECRET) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders() });
     }
 
     const body = await req.json();
     const { type, storeId, data } = body;
 
-    // Verify this storeId exists
     const store = await prisma.store.findUnique({ where: { id: storeId } });
     if (!store) {
-        return NextResponse.json({ error: "Store not found" }, { status: 404 });
+        return NextResponse.json({ error: "Store not found" }, { status: 404, headers: corsHeaders() });
     }
 
     switch (type) {
@@ -31,7 +40,7 @@ export async function POST(req: NextRequest) {
                     customerName: data.customerName,
                     customerEmail: data.customerEmail,
                     items: {
-                        create: data.items.map((item: any) => ({
+                        create: (data.items ?? []).map((item: any) => ({
                             name: item.name,
                             quantity: item.quantity,
                             price: item.price,
@@ -82,8 +91,8 @@ export async function POST(req: NextRequest) {
             break;
 
         default:
-            return NextResponse.json({ error: "Unknown event type" }, { status: 400 });
+            return NextResponse.json({ error: "Unknown event type" }, { status: 400, headers: corsHeaders() });
     }
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { headers: corsHeaders() });
 }
