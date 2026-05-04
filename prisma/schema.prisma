@@ -30,6 +30,8 @@ model Order {
   currency      String      @default("PKR")
   customerName  String?
   customerEmail String?
+  address       String?
+  phone         String?
   items         OrderItem[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt

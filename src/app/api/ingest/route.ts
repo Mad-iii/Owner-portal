@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
                     total: data.total,
                     customerName: data.customerName,
                     customerEmail: data.customerEmail,
+                    address: data.address,
+                    phone: data.phone,
                     items: {
                         create: (data.items ?? []).map((item: any) => ({
                             name: item.name,
