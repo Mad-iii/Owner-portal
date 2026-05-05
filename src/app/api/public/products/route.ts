@@ -23,7 +23,18 @@ export async function GET(req: NextRequest) {
     const products = await prisma.product.findMany({
         where: { storeId: store.id, active: true },
         orderBy: { createdAt: "desc" },
-        select: { id: true, name: true, price: true, stock: true, category: true, img: true, sku: true },
+        select: {
+            id: true,
+            name: true,
+            price: true,
+            stock: true,
+            category: true,
+            img: true,
+            images: true,       // ← new
+            description: true,  // ← new
+            materials: true,    // ← new
+            sku: true,
+        },
     });
 
     return NextResponse.json(products, { headers: corsHeaders() });

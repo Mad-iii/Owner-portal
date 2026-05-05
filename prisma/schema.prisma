@@ -55,18 +55,21 @@ enum OrderStatus {
 }
 
 model Product {
-  id        String   @id @default(cuid())
-  storeId   String
-  store     Store    @relation(fields: [storeId], references: [id])
-  name      String
-  sku       String?
-  price     Float
-  stock     Int      @default(0)
-  category  String?
-  img       String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  name        String
+  sku         String?
+  price       Float
+  stock       Int      @default(0)
+  category    String?
+  img         String?
+  images      String[] @default([])    // ← ADD THIS
+  description String?                  // ← ADD THIS
+  materials   String?                  // ← ADD THIS
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Customer {
