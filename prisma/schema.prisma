@@ -74,6 +74,8 @@ model Customer {
   store     Store    @relation(fields: [storeId], references: [id])
   email     String
   name      String?
+  phone     String?
+  address   String?
   createdAt DateTime @default(now())
 
   @@unique([storeId, email])

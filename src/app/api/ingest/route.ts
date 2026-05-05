@@ -50,6 +50,21 @@ export async function POST(req: NextRequest) {
                     },
                 },
             });
+            // Auto-create customer from order data
+            if (data.customerName || data.phone) {
+                const customerKey = data.phone ?? data.customerName;
+                await prisma.customer.upsert({
+                    where: { storeId_email: { storeId, email: data.phone ?? data.customerName ?? "unknown" } },
+                    update: { name: data.customerName, phone: data.phone, address: data.address },
+                    create: {
+                        storeId,
+                        email: data.phone ?? data.customerName ?? "unknown",
+                        name: data.customerName,
+                        phone: data.phone,
+                        address: data.address,
+                    },
+                });
+            }
             break;
 
         case "ORDER_STATUS_UPDATED":
