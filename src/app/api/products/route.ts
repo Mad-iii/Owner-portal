@@ -1,53 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-function corsHeaders() {
-    return {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type',
-    };
+function cors() {
+    return { "Access-Control-Allow-Origin": "*" };
 }
 
-export async function OPTIONS() {
-    return new NextResponse(null, { headers: corsHeaders() });
+export async function GET() {
+    const session = await auth();
+    if (!session?.user?.storeId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const products = await prisma.product.findMany({ where: { storeId: session.user.storeId }, orderBy: { createdAt: "desc" } });
+    return NextResponse.json(products);
 }
 
-export async function GET(req: NextRequest) {
-    try {
-        const { searchParams } = new URL(req.url);
-        const storeSlug = searchParams.get('store');
+export async function POST(req: NextRequest) {
+    const session = await auth();
+    if (!session?.user?.storeId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const body = await req.json();
+    const product = await prisma.product.create({
+        data: { ...body, storeId: session.user.storeId },
+    });
+    return NextResponse.json(product);
+}
 
-        if (!storeSlug) {
-            return NextResponse.json(
-                { error: 'Missing ?store= param' },
-                { status: 400, headers: corsHeaders() }
-            );
-        }
+export async function PUT(req: NextRequest) {
+    const session = await auth();
+    if (!session?.user?.storeId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const id = new URL(req.url).searchParams.get("id")!;
+    const body = await req.json();
+    const product = await prisma.product.update({ where: { id }, data: body });
+    return NextResponse.json(product);
+}
 
-        const products = await prisma.product.findMany({
-            where: {
-                store: { slug: storeSlug },
-                active: true,
-            },
-            select: {
-                id: true,
-                name: true,
-                sku: true,
-                price: true,
-                stock: true,
-                category: true,
-                img: true,
-            },
-            orderBy: { createdAt: 'desc' },
-        });
-
-        return NextResponse.json(products, { headers: corsHeaders() });
-    } catch (err) {
-        console.error(err);
-        return NextResponse.json(
-            { error: 'Failed to fetch products' },
-            { status: 500, headers: corsHeaders() }
-        );
-    }
+export async function DELETE(req: NextRequest) {
+    const session = await auth();
+    if (!session?.user?.storeId) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const id = new URL(req.url).searchParams.get("id")!;
+    await prisma.product.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
 }
