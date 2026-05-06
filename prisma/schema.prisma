@@ -64,9 +64,9 @@ model Product {
   stock       Int      @default(0)
   category    String?
   img         String?
-  images      String[] @default([])    // ← ADD THIS
-  description String?                  // ← ADD THIS
-  materials   String?                  // ← ADD THIS
+  images      String[] @default([])    
+  description String?                  
+  materials   String?                  
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
