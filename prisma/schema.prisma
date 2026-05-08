@@ -73,14 +73,16 @@ model Product {
 }
 
 model Customer {
-  id        String   @id @default(cuid())
-  storeId   String
-  store     Store    @relation(fields: [storeId], references: [id])
-  email     String
-  name      String?
-  phone     String?
-  address   String?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  storeId     String
+  store       Store    @relation(fields: [storeId], references: [id])
+  email       String
+  name        String?
+  phone       String?
+  address     String?
+  orderCount  Int      @default(0)
+  totalSpend  Float    @default(0)
+  createdAt   DateTime @default(now())
 
   @@unique([storeId, email])
 }

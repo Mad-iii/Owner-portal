@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
                     status: "PENDING",
                     total: data.total,
                     customerName: data.customerName,
-                    customerEmail: data.customerEmail,
+                    customerEmail: data.customerEmail ?? null,
                     address: data.address,
                     phone: data.phone,
                     items: {
@@ -50,18 +50,21 @@ export async function POST(req: NextRequest) {
                     },
                 },
             });
-            // Auto-create customer from order data
-            if (data.customerName || data.phone) {
-                const customerKey = data.phone ?? data.customerName;
+            // Only create customer record if we have a real email
+            if (data.customerEmail) {
                 await prisma.customer.upsert({
-                    where: { storeId_email: { storeId, email: data.phone ?? data.customerName ?? "unknown" } },
-                    update: { name: data.customerName, phone: data.phone, address: data.address },
+                    where: { storeId_email: { storeId, email: data.customerEmail } },
+                    update: {
+                        name: data.customerName ?? undefined,
+                        phone: data.phone ?? undefined,
+                        address: data.address ?? undefined
+                    },
                     create: {
                         storeId,
-                        email: data.phone ?? data.customerName ?? "unknown",
-                        name: data.customerName,
-                        phone: data.phone,
-                        address: data.address,
+                        email: data.customerEmail,
+                        name: data.customerName ?? null,
+                        phone: data.phone ?? null,
+                        address: data.address ?? null,
                     },
                 });
             }
