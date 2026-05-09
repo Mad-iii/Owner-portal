@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
     }
 
     switch (type) {
-        case "ORDER_CREATED":
+        case "ORDER_CREATED": {
             await prisma.order.create({
                 data: {
                     storeId,
@@ -50,14 +50,16 @@ export async function POST(req: NextRequest) {
                     },
                 },
             });
-            // Only create customer record if we have a real email
+
+            // Upsert customer — create if new, update contact info if returning
+            // orderCount/totalSpend only increment on DELIVERED (see ORDER_STATUS_UPDATED)
             if (data.customerEmail) {
                 await prisma.customer.upsert({
                     where: { storeId_email: { storeId, email: data.customerEmail } },
                     update: {
                         name: data.customerName ?? undefined,
                         phone: data.phone ?? undefined,
-                        address: data.address ?? undefined
+                        address: data.address ?? undefined,
                     },
                     create: {
                         storeId,
@@ -65,17 +67,61 @@ export async function POST(req: NextRequest) {
                         name: data.customerName ?? null,
                         phone: data.phone ?? null,
                         address: data.address ?? null,
+                        orderCount: 0,
+                        totalSpend: 0,
                     },
                 });
             }
             break;
+        }
 
-        case "ORDER_STATUS_UPDATED":
+        case "ORDER_STATUS_UPDATED": {
+            // Find the order first so we know the email and total
+            const order = await prisma.order.findUnique({
+                where: { id: data.orderId },
+            });
+
+            if (!order) {
+                return NextResponse.json({ error: "Order not found" }, { status: 404, headers: corsHeaders() });
+            }
+
+            // Update the order status
             await prisma.order.update({
                 where: { id: data.orderId },
                 data: { status: data.status },
             });
+
+            // When an order is marked DELIVERED, increment the customer's stats
+            if (data.status === "DELIVERED" && order.customerEmail) {
+                await prisma.customer.upsert({
+                    where: { storeId_email: { storeId, email: order.customerEmail } },
+                    update: {
+                        orderCount: { increment: 1 },
+                        totalSpend: { increment: order.total },
+                    },
+                    create: {
+                        storeId,
+                        email: order.customerEmail,
+                        name: order.customerName ?? null,
+                        orderCount: 1,
+                        totalSpend: order.total,
+                    },
+                });
+            }
+
+            // If an order was previously DELIVERED and is now changed (e.g. CANCELLED),
+            // decrement the stats so the numbers stay accurate
+            if (order.status === "DELIVERED" && data.status !== "DELIVERED" && order.customerEmail) {
+                await prisma.customer.updateMany({
+                    where: { storeId, email: order.customerEmail },
+                    data: {
+                        orderCount: { decrement: 1 },
+                        totalSpend: { decrement: order.total },
+                    },
+                });
+            }
             break;
+        }
 
         case "PRODUCT_STOCK_UPDATED":
             await prisma.product.upsert({
@@ -106,7 +152,13 @@ export async function POST(req: NextRequest) {
             await prisma.customer.upsert({
                 where: { storeId_email: { storeId, email: data.email } },
                 update: { name: data.name },
-                create: { storeId, email: data.email, name: data.name },
+                create: {
+                    storeId,
+                    email: data.email,
+                    name: data.name,
+                    orderCount: 0,
+                    totalSpend: 0,
+                },
             });
             break;
 

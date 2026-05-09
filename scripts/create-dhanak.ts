@@ -12,8 +12,8 @@ async function main() {
         create: {
             name: "Dhanak Accessories",
             slug: "dhanak",
-            email: "dhanak@owner.com",
-            password: hashedPassword,
+            email: process.env.DHANAK_EMAIL,
+            password: process.env.DHANAK_PASSWORD,
         },
     });
 
