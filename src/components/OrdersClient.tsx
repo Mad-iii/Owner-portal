@@ -16,7 +16,11 @@ function OrderRow({ order: initialOrder }: { order: any }) {
     const [expanded, setExpanded] = useState(false);
     const [updating, setUpdating] = useState(false);
 
-    async function updateStatus(newStatus: string) {
+    async function updateStatus(e: React.MouseEvent, newStatus: string) {
+        // Stop the row click from toggling expanded
+        e.stopPropagation();
+
+        if (updating) return;
         setUpdating(true);
         try {
             const res = await fetch("/api/orders/update-status", {
@@ -24,9 +28,15 @@ function OrderRow({ order: initialOrder }: { order: any }) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ orderId: order.id, status: newStatus }),
             });
-            if (res.ok) {
-                setOrder({ ...order, status: newStatus });
+            const json = await res.json();
+            if (res.ok && json.ok) {
+                // Update local state so UI reflects new status immediately
+                setOrder((prev: any) => ({ ...prev, status: newStatus }));
+            } else {
+                console.error("Status update failed:", json);
             }
+        } catch (err) {
+            console.error("Status update error:", err);
         } finally {
             setUpdating(false);
         }
@@ -40,7 +50,7 @@ function OrderRow({ order: initialOrder }: { order: any }) {
         <>
             <tr
                 style={{ borderBottom: "1px solid var(--border)", cursor: "pointer" }}
-                onClick={() => setExpanded(!expanded)}
+                onClick={() => setExpanded(prev => !prev)}
             >
                 <td style={{ padding: "14px 20px", fontSize: "13px", fontWeight: 700, color: "var(--blue)", fontFamily: "monospace" }}>
                     {order.orderNumber}
@@ -94,32 +104,35 @@ function OrderRow({ order: initialOrder }: { order: any }) {
                             {/* Actions */}
                             <div style={{ display: "flex", flexDirection: "column", gap: "8px", minWidth: "180px" }}>
                                 <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0px" }}>Update Status</p>
+
                                 {nextStatus && order.status !== "CANCELLED" && (
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); updateStatus(nextStatus); }}
+                                        onClick={(e) => updateStatus(e, nextStatus)}
                                         disabled={updating}
                                         style={{
                                             padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
-                                            background: "var(--blue)", color: "white", border: "none", cursor: "pointer",
+                                            background: "var(--blue)", color: "white", border: "none", cursor: updating ? "not-allowed" : "pointer",
                                             opacity: updating ? 0.6 : 1,
                                         }}
                                     >
                                         {updating ? "Updating..." : `Mark as ${nextStatus}`}
                                     </button>
                                 )}
+
                                 {order.status !== "CANCELLED" && order.status !== "DELIVERED" && (
                                     <button
-                                        onClick={(e) => { e.stopPropagation(); updateStatus("CANCELLED"); }}
+                                        onClick={(e) => updateStatus(e, "CANCELLED")}
                                         disabled={updating}
                                         style={{
                                             padding: "8px 16px", borderRadius: "8px", fontSize: "12px", fontWeight: 600,
-                                            background: "#fee2e2", color: "#dc2626", border: "none", cursor: "pointer",
+                                            background: "#fee2e2", color: "#dc2626", border: "none", cursor: updating ? "not-allowed" : "pointer",
                                             opacity: updating ? 0.6 : 1,
                                         }}
                                     >
                                         Cancel Order
                                     </button>
                                 )}
+
                                 {(order.status === "DELIVERED" || order.status === "CANCELLED") && (
                                     <p style={{ fontSize: "12px", color: "var(--text-muted)", fontStyle: "italic" }}>No further actions</p>
                                 )}

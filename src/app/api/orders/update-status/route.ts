@@ -10,6 +10,7 @@ export async function POST(req: NextRequest) {
 
     const { orderId, status } = await req.json();
 
+    // Get the order BEFORE updating so we know the previous status
     const order = await prisma.order.findFirst({
         where: { id: orderId, storeId: session.user.storeId },
     });
@@ -18,30 +19,46 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Order not found" }, { status: 404 });
     }
 
+    // Update the order status
     const updated = await prisma.order.update({
         where: { id: orderId },
         data: { status },
     });
 
-    // When an order is delivered, update customer stats
-    if (status === "DELIVERED" && order.customerEmail) {
+    const storeId = session.user.storeId;
+
+    // Only increment customer stats when transitioning TO delivered for the first time
+    // Guard: previous status must NOT already be DELIVERED
+    if (status === "DELIVERED" && order.status !== "DELIVERED" && order.customerEmail) {
         await prisma.customer.upsert({
-            where: { storeId_email: { storeId: session.user.storeId, email: order.customerEmail } },
+            where: { storeId_email: { storeId, email: order.customerEmail } },
             update: {
                 orderCount: { increment: 1 },
                 totalSpend: { increment: order.total },
+                // Also update contact info in case it changed
                 name: order.customerName ?? undefined,
                 phone: order.phone ?? undefined,
                 address: order.address ?? undefined,
             },
             create: {
-                storeId: session.user.storeId,
+                storeId,
                 email: order.customerEmail,
                 name: order.customerName ?? null,
                 phone: order.phone ?? null,
                 address: order.address ?? null,
                 orderCount: 1,
                 totalSpend: order.total,
+            },
+        });
+    }
+
+    // If moving away from DELIVERED (e.g. back to CANCELLED), decrement
+    if (order.status === "DELIVERED" && status !== "DELIVERED" && order.customerEmail) {
+        await prisma.customer.updateMany({
+            where: { storeId, email: order.customerEmail },
+            data: {
+                orderCount: { decrement: 1 },
+                totalSpend: { decrement: order.total },
             },
         });
     }
