@@ -27,40 +27,53 @@ export async function POST(req: NextRequest) {
 
     const storeId = session.user.storeId;
 
-    // Only increment customer stats when transitioning TO delivered for the first time
-    // Guard: previous status must NOT already be DELIVERED
+    // Only create/increment customer when transitioning TO delivered for the first time
     if (status === "DELIVERED" && order.status !== "DELIVERED" && order.customerEmail) {
-        await prisma.customer.upsert({
+        const existing = await prisma.customer.findUnique({
             where: { storeId_email: { storeId, email: order.customerEmail } },
-            update: {
-                orderCount: { increment: 1 },
-                totalSpend: { increment: order.total },
-                // Also update contact info in case it changed
-                name: order.customerName ?? undefined,
-                phone: order.phone ?? undefined,
-                address: order.address ?? undefined,
-            },
-            create: {
-                storeId,
-                email: order.customerEmail,
-                name: order.customerName ?? null,
-                phone: order.phone ?? null,
-                address: order.address ?? null,
-                orderCount: 1,
-                totalSpend: order.total,
-            },
         });
+
+        if (existing) {
+            await prisma.customer.update({
+                where: { storeId_email: { storeId, email: order.customerEmail } },
+                data: {
+                    orderCount: existing.orderCount + 1,
+                    totalSpend: existing.totalSpend + order.total,
+                    name: order.customerName ?? existing.name,
+                    phone: order.phone ?? existing.phone,
+                    address: order.address ?? existing.address,
+                },
+            });
+        } else {
+            await prisma.customer.create({
+                data: {
+                    storeId,
+                    email: order.customerEmail,
+                    name: order.customerName ?? null,
+                    phone: order.phone ?? null,
+                    address: order.address ?? null,
+                    orderCount: 1,
+                    totalSpend: order.total,
+                },
+            });
+        }
     }
 
     // If moving away from DELIVERED (e.g. back to CANCELLED), decrement
     if (order.status === "DELIVERED" && status !== "DELIVERED" && order.customerEmail) {
-        await prisma.customer.updateMany({
-            where: { storeId, email: order.customerEmail },
-            data: {
-                orderCount: { decrement: 1 },
-                totalSpend: { decrement: order.total },
-            },
+        const existing = await prisma.customer.findUnique({
+            where: { storeId_email: { storeId, email: order.customerEmail } },
         });
+
+        if (existing) {
+            await prisma.customer.update({
+                where: { storeId_email: { storeId, email: order.customerEmail } },
+                data: {
+                    orderCount: Math.max(0, existing.orderCount - 1),
+                    totalSpend: Math.max(0, existing.totalSpend - order.total),
+                },
+            });
+        }
     }
 
     return NextResponse.json({ ok: true, status: updated.status });
