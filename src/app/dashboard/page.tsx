@@ -130,8 +130,7 @@ export default function DashboardPage() {
                         <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
                             {data.lowStockProducts.map(p => (
                                 <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#fff7ed", borderRadius: "8px", border: "1px solid #fed7aa" }}>
-                                    <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>{p.name}</span>
-                                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "2px 8px", borderRadius: "6px" }}>{p.stock} left</span>
+                                    <span style={{ fontSize: "13px", fontWeight: 500, color: "#7c2d12" }}>{p.name}</span>                                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "2px 8px", borderRadius: "6px" }}>{p.stock} left</span>
                                 </div>
                             ))}
                         </div>
