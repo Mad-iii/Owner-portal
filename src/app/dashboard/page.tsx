@@ -1,150 +1,182 @@
-// src/app/dashboard/products/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
-interface Product {
-    id: string;
-    name: string;
-    sku?: string;
-    price: number;
-    stock: number;
-    category?: string;
-    img?: string;
-    active: boolean;
+interface DashboardData {
+    totalRevenue: number;
+    totalOrders: number;
+    totalCustomers: number;
+    totalProducts: number;
+    pendingOrders: number;
+    processingOrders: number;
+    shippedOrders: number;
+    deliveredOrders: number;
+    cancelledOrders: number;
+    lowStockProducts: { id: string; name: string; stock: number }[];
+    revenueByDay: { label: string; revenue: number }[];
+    recentOrders: {
+        id: string;
+        orderNumber: string;
+        customerName: string | null;
+        total: number;
+        status: string;
+        createdAt: string;
+    }[];
 }
 
-const emptyForm = { name: "", sku: "", price: "", stock: "", category: "", img: "", active: true };
+const STATUS_STYLES: Record<string, { bg: string; color: string }> = {
+    DELIVERED: { bg: "#dcfce7", color: "#16a34a" },
+    PENDING: { bg: "#fef9c3", color: "#a16207" },
+    PROCESSING: { bg: "#dbeafe", color: "#2563eb" },
+    SHIPPED: { bg: "#ede9fe", color: "#7c3aed" },
+    CANCELLED: { bg: "#fee2e2", color: "#dc2626" },
+};
 
-export default function ProductsPage() {
-    const [products, setProducts] = useState<Product[]>([]);
+export default function DashboardPage() {
+    const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-    const [form, setForm] = useState(emptyForm);
-    const [saving, setSaving] = useState(false);
 
-    async function loadProducts() {
-        const res = await fetch("/api/products/manage");
-        const data = await res.json();
-        setProducts(data);
-        setLoading(false);
-    }
+    useEffect(() => {
+        fetch("/api/dashboard")
+            .then(r => r.json())
+            .then(setData)
+            .finally(() => setLoading(false));
+    }, []);
 
-    useEffect(() => { loadProducts(); }, []);
+    if (loading) return (
+        <div style={{ padding: "32px", color: "var(--text-muted)", fontSize: "14px" }}>Loading...</div>
+    );
 
-    function openAdd() {
-        setEditingProduct(null);
-        setForm(emptyForm);
-        setShowModal(true);
-    }
+    if (!data) return (
+        <div style={{ padding: "32px", color: "var(--text-muted)", fontSize: "14px" }}>Failed to load dashboard.</div>
+    );
 
-    function openEdit(p: Product) {
-        setEditingProduct(p);
-        setForm({ name: p.name, sku: p.sku ?? "", price: String(p.price), stock: String(p.stock), category: p.category ?? "", img: p.img ?? "", active: p.active });
-        setShowModal(true);
-    }
-
-    async function handleSave() {
-        setSaving(true);
-        const body = { ...form, price: parseFloat(form.price), stock: parseInt(form.stock) };
-        const url = editingProduct ? `/api/products/manage?id=${editingProduct.id}` : "/api/products/manage";
-        const method = editingProduct ? "PUT" : "POST";
-        await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-        setSaving(false);
-        setShowModal(false);
-        loadProducts();
-    }
-
-    async function handleDelete(id: string) {
-        if (!confirm("Delete this product?")) return;
-        await fetch(`/api/products/manage?id=${id}`, { method: "DELETE" });
-        loadProducts();
-    }
+    const maxRevenue = Math.max(...data.revenueByDay.map(d => d.revenue), 1);
 
     return (
-        <div style={{ padding: "32px" }}>
-            <div style={{ marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div>
-                    <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>Products</h1>
-                    <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>{products.length} products in your catalogue</p>
-                </div>
-                <button onClick={openAdd} style={{ background: "var(--blue)", color: "white", border: "none", borderRadius: "8px", padding: "10px 18px", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-                    + Add Product
-                </button>
+        <div style={{ padding: "32px", display: "flex", flexDirection: "column", gap: "24px" }}>
+
+            {/* Header */}
+            <div>
+                <h1 style={{ fontSize: "22px", fontWeight: 700, color: "var(--text-primary)", marginBottom: "4px" }}>Overview</h1>
+                <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>Welcome back. Here's what's happening with Dhanak.</p>
             </div>
 
-            {loading ? (
-                <p style={{ color: "var(--text-muted)" }}>Loading...</p>
-            ) : (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
-                    {products.map((product) => (
-                        <div key={product.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px", display: "flex", flexDirection: "column", gap: "12px" }}>
-                            {product.img && (
-                                <img src={product.img} alt={product.name} style={{ width: "100%", height: "160px", objectFit: "cover", borderRadius: "8px" }} />
-                            )}
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                                <h3 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", flex: 1, marginRight: "8px" }}>{product.name}</h3>
-                                <span style={{ padding: "3px 8px", borderRadius: "20px", fontSize: "11px", fontWeight: 600, flexShrink: 0, background: product.active ? "#dcfce7" : "var(--bg-subtle)", color: product.active ? "#16a34a" : "var(--text-muted)" }}>
-                                    {product.active ? "Active" : "Inactive"}
-                                </span>
-                            </div>
-                            {product.category && (
-                                <span style={{ alignSelf: "flex-start", padding: "3px 8px", borderRadius: "6px", fontSize: "11px", background: "var(--blue-light)", color: "var(--blue)" }}>{product.category}</span>
-                            )}
-                            <div style={{ borderTop: "1px solid var(--border)", paddingTop: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                                <span style={{ fontSize: "16px", fontWeight: 700, color: "var(--blue)" }}>PKR {product.price.toLocaleString()}</span>
-                                <span style={{ fontSize: "12px", fontWeight: 500, color: product.stock < 10 ? "#dc2626" : "var(--text-secondary)", background: product.stock < 10 ? "#fee2e2" : "var(--bg-subtle)", padding: "3px 8px", borderRadius: "6px" }}>
-                                    {product.stock} in stock
-                                </span>
-                            </div>
-                            <div style={{ display: "flex", gap: "8px" }}>
-                                <button onClick={() => openEdit(product)} style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid var(--border)", background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Edit</button>
-                                <button onClick={() => handleDelete(product.id)} style={{ flex: 1, padding: "8px", borderRadius: "6px", border: "1px solid #fee2e2", background: "#fee2e2", color: "#dc2626", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>Delete</button>
-                            </div>
+            {/* Stat Cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "16px" }}>
+                {[
+                    { label: "Total Revenue", value: `PKR ${data.totalRevenue.toLocaleString()}`, sub: "from delivered orders", color: "#2563eb" },
+                    { label: "Total Orders", value: data.totalOrders, sub: `${data.pendingOrders} pending`, color: "#7c3aed" },
+                    { label: "Customers", value: data.totalCustomers, sub: "registered", color: "#059669" },
+                    { label: "Products", value: data.totalProducts, sub: `${data.lowStockProducts.length} low stock`, color: "#d97706" },
+                ].map(card => (
+                    <div key={card.label} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
+                        <p style={{ fontSize: "11px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "8px" }}>{card.label}</p>
+                        <p style={{ fontSize: "24px", fontWeight: 700, color: card.color, marginBottom: "4px" }}>{card.value}</p>
+                        <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>{card.sub}</p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Order Status Breakdown */}
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
+                <h2 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "16px" }}>Order Status Breakdown</h2>
+                <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
+                    {[
+                        { label: "Pending", value: data.pendingOrders, ...STATUS_STYLES.PENDING },
+                        { label: "Processing", value: data.processingOrders, ...STATUS_STYLES.PROCESSING },
+                        { label: "Shipped", value: data.shippedOrders, ...STATUS_STYLES.SHIPPED },
+                        { label: "Delivered", value: data.deliveredOrders, ...STATUS_STYLES.DELIVERED },
+                        { label: "Cancelled", value: data.cancelledOrders, ...STATUS_STYLES.CANCELLED },
+                    ].map(s => (
+                        <div key={s.label} style={{ padding: "12px 20px", borderRadius: "10px", background: s.bg, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px", minWidth: "100px" }}>
+                            <span style={{ fontSize: "22px", fontWeight: 700, color: s.color }}>{s.value}</span>
+                            <span style={{ fontSize: "11px", fontWeight: 600, color: s.color, textTransform: "uppercase", letterSpacing: "0.05em" }}>{s.label}</span>
                         </div>
                     ))}
-                    {products.length === 0 && (
-                        <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "64px", color: "var(--text-muted)", fontSize: "14px" }}>No products yet.</div>
-                    )}
                 </div>
-            )}
+            </div>
 
-            {showModal && (
-                <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 50 }}>
-                    <div style={{ background: "var(--bg-card)", borderRadius: "16px", padding: "32px", width: "100%", maxWidth: "480px", display: "flex", flexDirection: "column", gap: "16px" }}>
-                        <h2 style={{ fontSize: "18px", fontWeight: 700, color: "var(--text-primary)" }}>{editingProduct ? "Edit Product" : "Add Product"}</h2>
-                        {[
-                            { label: "Name *", key: "name", type: "text" },
-                            { label: "SKU", key: "sku", type: "text" },
-                            { label: "Price (PKR) *", key: "price", type: "number" },
-                            { label: "Stock *", key: "stock", type: "number" },
-                            { label: "Category", key: "category", type: "text" },
-                            { label: "Image URL", key: "img", type: "text" },
-                        ].map(({ label, key, type }) => (
-                            <div key={key}>
-                                <label style={{ fontSize: "12px", fontWeight: 600, color: "var(--text-muted)", display: "block", marginBottom: "6px" }}>{label}</label>
-                                <input
-                                    type={type}
-                                    value={(form as any)[key]}
-                                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                                    style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: "13px", boxSizing: "border-box" }}
-                                />
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+
+                {/* Revenue Chart */}
+                <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
+                    <h2 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "16px" }}>Revenue — Last 7 Days</h2>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", height: "120px" }}>
+                        {data.revenueByDay.map(day => (
+                            <div key={day.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "6px", height: "100%" }}>
+                                <div style={{ flex: 1, width: "100%", display: "flex", alignItems: "flex-end" }}>
+                                    <div style={{
+                                        width: "100%",
+                                        height: `${Math.max((day.revenue / maxRevenue) * 100, day.revenue > 0 ? 4 : 0)}%`,
+                                        background: day.revenue > 0 ? "#2563eb" : "var(--border)",
+                                        borderRadius: "4px 4px 0 0",
+                                        transition: "height 0.3s",
+                                    }} />
+                                </div>
+                                <span style={{ fontSize: "9px", color: "var(--text-muted)", textAlign: "center", whiteSpace: "nowrap" }}>{day.label}</span>
                             </div>
                         ))}
-                        <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-primary)", cursor: "pointer" }}>
-                            <input type="checkbox" checked={form.active} onChange={e => setForm(f => ({ ...f, active: e.target.checked }))} />
-                            Active (visible on site)
-                        </label>
-                        <div style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-                            <button onClick={() => setShowModal(false)} style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "1px solid var(--border)", background: "var(--bg-subtle)", color: "var(--text-primary)", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>Cancel</button>
-                            <button onClick={handleSave} disabled={saving} style={{ flex: 1, padding: "10px", borderRadius: "8px", border: "none", background: "var(--blue)", color: "white", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-                                {saving ? "Saving..." : "Save"}
-                            </button>
-                        </div>
                     </div>
                 </div>
-            )}
+
+                {/* Low Stock */}
+                <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", padding: "20px" }}>
+                    <h2 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)", marginBottom: "16px" }}>Low Stock Alert</h2>
+                    {data.lowStockProducts.length === 0 ? (
+                        <p style={{ fontSize: "13px", color: "var(--text-muted)" }}>All products well stocked ✓</p>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                            {data.lowStockProducts.map(p => (
+                                <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#fff7ed", borderRadius: "8px", border: "1px solid #fed7aa" }}>
+                                    <span style={{ fontSize: "13px", fontWeight: 500, color: "var(--text-primary)" }}>{p.name}</span>
+                                    <span style={{ fontSize: "12px", fontWeight: 700, color: "#dc2626", background: "#fee2e2", padding: "2px 8px", borderRadius: "6px" }}>{p.stock} left</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Recent Orders */}
+            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: "12px", overflow: "hidden" }}>
+                <div style={{ padding: "16px 20px", borderBottom: "1px solid var(--border)", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <h2 style={{ fontSize: "14px", fontWeight: 600, color: "var(--text-primary)" }}>Recent Orders</h2>
+                    <Link href="/dashboard/orders" style={{ fontSize: "12px", color: "var(--blue)", fontWeight: 600, textDecoration: "none" }}>View all →</Link>
+                </div>
+                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                    <thead>
+                        <tr style={{ background: "var(--bg-subtle)" }}>
+                            {["Order", "Customer", "Total", "Status", "Date"].map(h => (
+                                <th key={h} style={{ padding: "10px 16px", fontSize: "11px", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", textAlign: "left" }}>{h}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {data.recentOrders.length === 0 && (
+                            <tr><td colSpan={5} style={{ textAlign: "center", padding: "32px", color: "var(--text-muted)", fontSize: "13px" }}>No orders yet.</td></tr>
+                        )}
+                        {data.recentOrders.map(order => {
+                            const s = STATUS_STYLES[order.status] ?? { bg: "var(--bg-subtle)", color: "var(--text-muted)" };
+                            return (
+                                <tr key={order.id} style={{ borderTop: "1px solid var(--border)" }}>
+                                    <td style={{ padding: "12px 16px", fontSize: "13px", fontFamily: "monospace", fontWeight: 600, color: "var(--text-primary)" }}>#{order.orderNumber}</td>
+                                    <td style={{ padding: "12px 16px", fontSize: "13px", color: "var(--text-secondary)" }}>{order.customerName ?? "—"}</td>
+                                    <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 600, color: "var(--text-primary)" }}>PKR {order.total.toLocaleString()}</td>
+                                    <td style={{ padding: "12px 16px" }}>
+                                        <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 600, background: s.bg, color: s.color }}>{order.status}</span>
+                                    </td>
+                                    <td style={{ padding: "12px 16px", fontSize: "12px", color: "var(--text-muted)" }}>
+                                        {new Date(order.createdAt).toLocaleDateString("en-PK", { day: "numeric", month: "short" })}
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     );
 }
