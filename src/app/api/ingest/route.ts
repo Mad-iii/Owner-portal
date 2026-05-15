@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
                             name: item.name,
                             quantity: item.quantity,
                             price: item.price,
+                            productId: item.productId ?? null,
                         })),
                     },
                 },
