@@ -5,7 +5,7 @@ import { signOut } from "next-auth/react";
 import { useTheme } from "@/components/ThemeProvider";
 import {
     LayoutDashboard, ShoppingCart, Package,
-    Users, BarChart2, LogOut, Sun, Moon, Store,
+    Users, BarChart2, LogOut, Sun, Moon, Store, Star,
 } from "lucide-react";
 
 const navItems = [
@@ -14,6 +14,7 @@ const navItems = [
     { href: "/dashboard/products", label: "Products", icon: Package },
     { href: "/dashboard/customers", label: "Customers", icon: Users },
     { href: "/dashboard/analytics", label: "Analytics", icon: BarChart2 },
+    { href: "/reviews", label: "Reviews", icon: Star },
 ];
 
 export default function Sidebar({ storeName }: { storeName: string }) {
@@ -60,7 +61,7 @@ export default function Sidebar({ storeName }: { storeName: string }) {
             {/* Nav */}
             <nav style={{ flex: 1, padding: "12px 10px", display: "flex", flexDirection: "column", gap: "2px" }}>
                 {navItems.map(({ href, label, icon: Icon }) => {
-                    const active = pathname === href;
+                    const active = pathname === href || pathname.startsWith(href + "/");
                     return (
                         <Link
                             key={href}

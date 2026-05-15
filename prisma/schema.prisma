@@ -18,6 +18,7 @@ model Store {
   products  Product[]
   customers Customer[]
   visits    PageVisit[]
+  reviews Review[]
 }
 
 model Order {
@@ -35,6 +36,7 @@ model Order {
   items         OrderItem[]
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  reviews Review[]
 }
 
 model OrderItem {
@@ -44,6 +46,8 @@ model OrderItem {
   name     String
   quantity Int
   price    Float
+  productId String?
+product   Product? @relation(fields: [productId], references: [id])
 }
 
 enum OrderStatus {
@@ -70,6 +74,8 @@ model Product {
   active      Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  reviews    Review[]
+  orderItems OrderItem[]
 }
 
 model Customer {
@@ -95,4 +101,29 @@ model PageVisit {
   sessionId String?
   country   String?
   createdAt DateTime @default(now())
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  storeId       String
+  productId     String
+  productName   String
+  orderId       String?
+  customerEmail String?
+  customerName  String?
+  rating        Int
+  title         String?
+  body          String
+  verified      Boolean  @default(true)
+  source        String   @default("organic")
+  status        String   @default("published")
+  createdAt     DateTime @default(now())
+
+  store   Store   @relation(fields: [storeId], references: [id])
+  product Product @relation(fields: [productId], references: [id])
+  order   Order?  @relation(fields: [orderId], references: [id])
+
+  @@index([storeId])
+  @@index([productId])
+  @@index([createdAt(sort: Desc)])
 }
